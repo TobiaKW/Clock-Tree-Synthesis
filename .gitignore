@@ -1,0 +1,12 @@
+# Executables
+cts
+*.out
+*.o
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
