@@ -32,7 +32,7 @@ public:
     /* dictionary called "edges", we use a pair of points as the key to get the edge*/
     map<pair<Point, Point>, Edge> edges;
 
-    pair<Point, Point> canonicalEdge(Point p1, Point p2);
+    pair<Point, Point> canonicalEdge(Point p1, Point p2) const;
     Edge& getEdge(Point p1, Point p2);  // returns canonical edge REFERENCE
     bool canUse(Point p1, Point p2);    // check legal && usage < CAPACITY
 };
