@@ -1,48 +1,11 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
 #include <sstream>
+#include "types.hpp"
 
 using namespace std;
 
-class Problem;
 Problem ParseProblem(const char* filename);
-
-/**==========data structures==========**/
-struct Tap {
-    int id;
-    int x;
-    int y;
-};
-
-struct Pin {
-    int id;
-    int x;
-    int y;
-};
-
-struct Blockage {
-    int id;
-    int xll;//lower left
-    int yll;
-    int xur;//upper right
-    int yur;
-};
-
-class Problem {
-public:
-    int MAX_LOAD;
-    int GRID_SIZE;
-    int CAPACITY;
-    int numTaps;
-    int numPins;
-    int numBlockages;
-    vector<Tap> taps;
-    vector<Pin> pins;
-    vector<Blockage> blockages;
-};
-/**==========end of data structures==========**/
 
 
 int main(int argc, char* argv[]){
@@ -62,7 +25,10 @@ int main(int argc, char* argv[]){
     // parse problem
     Problem prob = ParseProblem(inFile);
 
+    
 }
+
+
 
 /*================= Parser ========================*/
 Problem ParseProblem(const char* filename) {
