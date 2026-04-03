@@ -1,6 +1,7 @@
 #ifndef GRID_HPP
 #define GRID_HPP
 
+#include "types.hpp"
 #include <utility>
 #include <map>
 
@@ -34,7 +35,8 @@ public:
 
     pair<Point, Point> canonicalEdge(Point p1, Point p2) const;
     Edge& getEdge(Point p1, Point p2);  // returns canonical edge REFERENCE
-    bool canUse(Point p1, Point p2);    // check legal && usage < CAPACITY
+    bool canUse(Point p1, Point p2) const;    // check legal && usage < CAPACITY
+    void gridInit(const Problem& prob);
 };
 
 #endif
