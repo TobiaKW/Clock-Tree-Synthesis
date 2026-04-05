@@ -26,7 +26,7 @@ struct Edge {
 };
 
 class Grid {
-public:
+private:
     int GRID_SIZE;
     int CAPACITY;
 
@@ -35,6 +35,8 @@ public:
 
     pair<Point, Point> canonicalEdge(Point p1, Point p2) const;
     Edge& getEdge(Point p1, Point p2);  // returns canonical edge REFERENCE
+
+public:
     bool canUse(Point p1, Point p2) const;    // check legal && usage < CAPACITY
     void gridInit(const Problem& prob);
 };

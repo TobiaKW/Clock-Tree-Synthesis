@@ -2,6 +2,7 @@
 #include <fstream>
 #include "types.hpp"
 #include "parser.hpp"
+#include "grid.hpp"
 
 using namespace std;
 
@@ -21,6 +22,9 @@ int main(int argc, char* argv[]){
 
     // parse problem
     Problem prob = ParseProblem(inFile);
+
+    Grid grid;
+    grid.gridInit(prob);//function of grid class
 
     
 }
