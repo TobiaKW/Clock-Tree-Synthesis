@@ -11,4 +11,6 @@ cts
 # OS
 .DS_Store
 
-.proposal/
+# Proposal (build artifacts)
+Proposal/
+

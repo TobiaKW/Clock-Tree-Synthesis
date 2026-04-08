@@ -23,10 +23,6 @@ public:
 private:
     int manhattanDistance(const Pin& pin, const Tap& tap) const;
     
-    pair<int, map<int, int>> findAugmentingPath(
-        const Problem& prob,
-        const map<int, int>& currentAssignment
-    ) const;
 };
 
 #endif
