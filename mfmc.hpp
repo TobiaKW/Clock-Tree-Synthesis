@@ -7,9 +7,9 @@
 
 using namespace std;
 
-struct Edge {
+struct assignmentEdge {
     int cost, dist_to_center, pin, tap;
-    bool operator<(const Edge& other) const {
+    bool operator<(const assignmentEdge& other) const {
         if (cost != other.cost) return cost < other.cost;
         return dist_to_center < other.dist_to_center;  // closer to center first
     }

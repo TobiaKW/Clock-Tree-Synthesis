@@ -3,6 +3,7 @@
 #include "types.hpp"
 #include "parser.hpp"
 #include "grid.hpp"
+#include "mfmc.hpp"
 
 using namespace std;
 
@@ -26,5 +27,8 @@ int main(int argc, char* argv[]){
     Grid grid;
     grid.gridInit(prob);//function of grid class
 
-    
+    MFMC mfmc;
+    map<int, int> assignment = mfmc.assignPinsToTaps(prob);
+
+    return 0;
 }
