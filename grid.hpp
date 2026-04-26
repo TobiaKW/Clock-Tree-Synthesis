@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include <utility>
 #include <map>
+#include <set>
 
 using namespace std;
 
@@ -39,6 +40,22 @@ private:
 public:
     bool canUse(Point p1, Point p2) const;    // check legal && usage < CAPACITY
     void gridInit(const Problem& prob);
+};
+
+
+class Tree{
+private:
+    set<Point> tree_points;
+    set<pair<Point, Point>> tree_edges;
+    //todo: skew etc
+public:
+    void addPoint(Point p);
+    void addEdge(pair<Point, Point> edge);
+    void removePoint(Point p);
+    void removeEdge(pair<Point, Point> edge);
+    set<pair<Point, Point>> getTree();
+    set<Point> getTreePoints();
+    set<pair<Point, Point>> getTreeEdges();
 };
 
 #endif

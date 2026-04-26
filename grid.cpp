@@ -56,3 +56,27 @@ void Grid::gridInit(const Problem& prob) {
         }
     }
 }
+
+void Tree::addPoint(Point p) {
+    tree_points.insert(p);
+}
+
+void Tree::addEdge(pair<Point, Point> edge) {
+    tree_edges.insert(edge);
+}
+
+void Tree::removePoint(Point p) {
+    tree_points.erase(p);
+}  
+
+void Tree::removeEdge(pair<Point, Point> edge) {
+    tree_edges.erase(edge);
+}
+
+set<pair<Point, Point>> Tree::getTreeEdges() {
+    return tree_edges;
+}
+
+set<Point> Tree::getTreePoints() {
+    return tree_points;
+}
