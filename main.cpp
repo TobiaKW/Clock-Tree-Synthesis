@@ -24,11 +24,14 @@ int main(int argc, char* argv[]){
     // parse problem
     Problem prob = ParseProblem(inFile);
 
+    // initialize grid
     Grid grid;
-    grid.gridInit(prob);//function of grid class
+    grid.gridInit(prob);
 
+    // assign pins to taps
     MFMC mfmc;
     map<int, int> assignment = mfmc.assignPinsToTaps(prob);
+    //output: matching result
 
     return 0;
 }
