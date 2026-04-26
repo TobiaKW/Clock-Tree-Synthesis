@@ -17,7 +17,7 @@ vector<Point> AStar::routePin(const Pin& pin, const set<Point>& tree,
     // pin --g--> node --h-->tree point, f=g+h
     priority_queue<pair<int, Point>, vector<pair<int, Point>>, greater<pair<int, Point>>> open_set;
     set<Point> closed_set;
-    map<Point, Point> parent;
+    map<Point, Point> parent;//first element is the node, second element is the parent
     map<Point, int> g_cost;
 
     // 2. Start from pin.location, goal = closest tree point
@@ -25,7 +25,7 @@ vector<Point> AStar::routePin(const Pin& pin, const set<Point>& tree,
     int h_value = heuristic(start, tree);
     int f_value = h_value;//init
     g_cost.insert({start, 0});
-    open_set.push(make_pair(0, start));
+    open_set.push(make_pair(f_value, start));
 
     // 3. While open_set not empty:
     //    - Pop lowest f-value node
@@ -40,26 +40,30 @@ vector<Point> AStar::routePin(const Pin& pin, const set<Point>& tree,
         int f = top_entry.first;
         Point current = top_entry.second;
         open_set.pop();
+        if(closed_set.count(current)) {
+            continue;
+        }
         if(tree.count(current)) { // if current is in the tree >> path found
-            //recontructpath
-        }else{
+            return reconstructPath(parent, start, current);
+        } else {
             for (const Point& neighbor : getNeighbors(current)) {
                 if(neighbor.x < 0 || neighbor.x >= prob.GRID_SIZE || neighbor.y < 0 || neighbor.y >= prob.GRID_SIZE || !grid.canUse(current, neighbor)) {
                     continue;
                 }
-                g_cost.insert({neighbor, g_cost[current] + 1});
+                int g_new = g_cost.at(current) + 1;
                 int h_new = heuristic(neighbor, tree);
-                int f_new = g_cost[neighbor] + h_new;
-                if(f_new < f) {
-                    open_set.push(make_pair(f_new, neighbor));
+                int f_new = g_new + h_new;
+                if (g_cost.find(neighbor) == g_cost.end() || g_new < g_cost[neighbor]) { //neighbor is new OR better than the previous one
+                    g_cost[neighbor] = g_new;
+                    open_set.push({f_new, neighbor});
                     parent[neighbor] = current;
                 }
             }
+            closed_set.insert(current);
         }
     }
     // 4. Return empty vector if no path found
-    
-    return {};  // placeholder
+    return {}; 
 }
 
 int AStar::manhattan(const Point& from, const Point& to) const {
@@ -81,8 +85,15 @@ vector<Point> AStar::reconstructPath(const map<Point, Point>& parent,
                                      const Point& start, const Point& goal) const {
     // TODO: Follow parent pointers from goal back to start
     // Return path in order: start -> ... -> goal
-    
-    return {};  // placeholder
+    vector<Point> path;
+    Point current = goal;
+    while (current.x != start.x || current.y != start.y) {
+        path.push_back(current);
+        current = parent.at(current);
+    }
+    path.push_back(start);
+    reverse(path.begin(), path.end());
+    return path;
 }
 
 vector<Point> AStar::getNeighbors(const Point& p) const {

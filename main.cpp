@@ -4,6 +4,7 @@
 #include "parser.hpp"
 #include "grid.hpp"
 #include "mfmc.hpp"
+#include "astar.hpp"
 
 using namespace std;
 
@@ -33,5 +34,9 @@ int main(int argc, char* argv[]){
     map<int, int> assignment = mfmc.assignPinsToTaps(prob);
     //output: matching result
 
+    // route pins to taps
+    AStar astar;
+
+    //todo
     return 0;
 }
