@@ -47,15 +47,14 @@ class Tree{
 private:
     set<Point> tree_points;
     set<pair<Point, Point>> tree_edges;
-    //todo: skew etc
+    map<Point, int> delay; //for monitoring delay and skew
 public:
     void addPoint(Point p);
     void addEdge(pair<Point, Point> edge);
     void removePoint(Point p);
     void removeEdge(pair<Point, Point> edge);
-    set<pair<Point, Point>> getTree();
-    set<Point> getTreePoints();
-    set<pair<Point, Point>> getTreeEdges();
+    set<Point> getTreePoints() const;
+    set<pair<Point, Point>> getTreeEdges() const;
 };
 
 #endif

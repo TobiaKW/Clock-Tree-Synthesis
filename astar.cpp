@@ -1,5 +1,6 @@
 #include "astar.hpp"
 #include "grid.hpp"
+
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -8,7 +9,7 @@
 
 using namespace std;
 
-vector<Point> AStar::routePin(const Pin& pin, const set<Point>& tree,
+vector<Point> AStar::routePin(const Pin& pin, const Tree& tree,
                                const Grid& grid, const Problem& prob) {
     // TODO: Implement A* search
     // 1. Initialize open_set (priority queue), closed_set, g_cost, parent
@@ -19,6 +20,8 @@ vector<Point> AStar::routePin(const Pin& pin, const set<Point>& tree,
     set<Point> closed_set;
     map<Point, Point> parent;//first element is the node, second element is the parent
     map<Point, int> g_cost;
+    set<Point> tree_points = tree.getTreePoints();
+    set<pair<Point, Point>> tree_edges = tree.getTreeEdges();
 
     // 2. Start from pin.location, goal = closest tree point
     Point start = {pin.x, pin.y};
@@ -43,7 +46,7 @@ vector<Point> AStar::routePin(const Pin& pin, const set<Point>& tree,
         if(closed_set.count(current)) {
             continue;
         }
-        if(tree.count(current)) { // if current is in the tree >> path found
+        if(tree_points.find(current) != tree_points.end()) { // if current is in the tree >> path found
             return reconstructPath(parent, start, current);
         } else {
             for (const Point& neighbor : getNeighbors(current)) {
@@ -70,9 +73,10 @@ int AStar::manhattan(const Point& from, const Point& to) const {
     return abs(from.x - to.x) + abs(from.y - to.y);
 }
 
-int AStar::heuristic(const Point& from, const set<Point>& tree) const {
+int AStar::heuristic(const Point& from, const Tree& tree) const {
+    set<Point> tree_points = tree.getTreePoints();
     int min_distance = INT_MAX;
-    for (const Point& tree_point : tree) {
+    for (const Point& tree_point : tree_points) {
         int distance = manhattan(from, tree_point);
         if (distance < min_distance) {
             min_distance = distance;
