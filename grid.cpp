@@ -91,7 +91,7 @@ void Tree::setDelay(int pin_id, int delay_val) {
 
 int Tree::getDelay(int pin_id) const {
     auto it = pin_delay.find(pin_id);
-    return it != pin_delay.end() ? it->second : -1;
+    return it != pin_delay.end() ? it->second : -1; //if not found, return -1
 }
 
 int Tree::getSkew() const {
@@ -104,7 +104,7 @@ int Tree::getSkew() const {
         max_delay = max(max_delay, delay);
         min_delay = min(min_delay, delay);
     }
-    
+    //if min_delay is INT_MAX, it means no delay is set, return 0
     return (min_delay == INT_MAX) ? 0 : (max_delay - min_delay);
 }
 

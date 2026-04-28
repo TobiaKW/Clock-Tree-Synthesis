@@ -46,7 +46,8 @@ vector<Point> AStar::routePin(const Pin& pin, const Tree& tree,
         if(closed_set.count(current)) {
             continue;
         }
-        if(tree_points.find(current) != tree_points.end()) { // if current is in the tree >> path found
+        if(tree_points.find(current) != tree_points.end() && 
+           !(current.x == start.x && current.y == start.y)) {
             return reconstructPath(parent, start, current);
         } else {
             for (const Point& neighbor : getNeighbors(current)) {
