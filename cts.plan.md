@@ -150,5 +150,9 @@ For each tap and its pin set:
 - [ ] **cost.hpp/cpp:** Compute skew and wirelength from routed solution
 - [ ] **main.cpp:** Orchestrate: parse → assign → route → validate → cost → output
 - [ ] **Testing:** Tiny synthetic cases (3×3 grid, 1-2 taps, 2-4 pins)
-- [ ] **Conflict resolution (optional):** Pin reordering + cross-tap reassignment
-- [ ] **Run against official benchmarks** when available
+- [ ] **Conflict resolution:** Pin reordering + cross-tap reassignment
+
+## TODO(updated 28 Apr):
+
+MFMC: post-process optimization
+Astar: in-function backtrack
