@@ -46,23 +46,26 @@ int main(int argc, char* argv[]){
         pins_per_tap[tap_id].push_back(pin_id);
     }
     
-    // Track global delays for final cost
-    int global_max_delay = 0;
-    int global_min_delay = INT_MAX;
-    int total_wirelength = 0;
+    // Track best solution across retries
     int best_cost = INT_MAX;
+    int best_global_max_delay = 0;
+    int best_global_min_delay = INT_MAX;
+    int best_total_wirelength = 0;
     Grid best_grid = grid;
+    map<int, Tree> best_trees;  // Store best tree for each tap
     
     // Random engine for shuffling
     default_random_engine engine{random_device()()};
 
     // Route each tap's pins to its own tree
-    for (int retry = 0; retry < 5; retry++) {
+    for (int retry = 0; retry < 2; retry++) {
 
         int local_max_delay = 0;
         int local_min_delay = INT_MAX;
         int local_total_wirelength = 0;
         Grid local_grid = grid;
+        bool skip_retry = false;
+        map<int, Tree> local_trees;  // Trees for this retry
 
         //level 1 backtrack: shuffle pin order
         for (auto &tap_pair : pins_per_tap) {
@@ -79,8 +82,9 @@ int main(int argc, char* argv[]){
             for (int pin_id : pin_ids) {
                 vector<Point> path = astar.routePin(prob.pins[pin_id], tree, local_grid, prob);
                 if (path.empty()) {
-                    cerr << "Error: could not route pin " << pin_id << " to tap " << tap_id << "\n";
-                    return 1;
+                    cerr << "Error: could not route pin " << pin_id << " to tap " << tap_id << " (skipping retry)\n";
+                    skip_retry = true;
+                    break;
                 }
                 
                 // Add path to tree
@@ -95,12 +99,12 @@ int main(int argc, char* argv[]){
                 int delay = path.size() - 1;
                 tree.setDelay(pin_id, delay);
                 
-                cout << "Pin " << pin_id << " routed to tap " << tap_id << " with delay " << delay << endl;
+                // cout << "Pin " << pin_id << " routed to tap " << tap_id << " with delay " << delay << endl;
             }
             
             // Report skew for this tap
             int tap_skew = tree.getSkew();
-            cout << "Tap " << tap_id << " skew: " << tap_skew << endl;
+            // cout << "Tap " << tap_id << " skew: " << tap_skew << endl;
             
             // Track global delays and wirelength
             for (int pin_id : pins_per_tap[tap_id]) {
@@ -111,28 +115,58 @@ int main(int argc, char* argv[]){
                 }
             }
             local_total_wirelength += tree.getWirelength();
-            cout << endl;
+            // cout << endl;
+            
+            local_trees[tap_id] = tree;  // Save tree for this tap
         }
         
-        // Calculate final cost
+        if (skip_retry) continue;
+        
+        // Calculate final cost using GLOBAL skew (max/min across all pins)
         if (local_min_delay == INT_MAX) local_min_delay = 0;
-        int local_skew = local_max_delay - local_min_delay;
-        int cost = local_skew * prob.numTaps + local_total_wirelength;
+        int global_skew = local_max_delay - local_min_delay;
+        int cost = global_skew * prob.numTaps + local_total_wirelength;
         if (cost < best_cost) {
             best_cost = cost;
-            global_max_delay = local_max_delay;
-            global_min_delay = local_min_delay;
-            total_wirelength = local_total_wirelength;
+            best_global_max_delay = local_max_delay;
+            best_global_min_delay = local_min_delay;
+            best_total_wirelength = local_total_wirelength;
             best_grid = local_grid;
+            best_trees = local_trees;  // Save best trees
         }
         
         cout << "=== Results for retry " << retry << " ===" << endl;
-        cout << "Local skew: " << local_skew << endl;
+        cout << "Global skew: " << global_skew << endl;
         cout << "Local wirelength: " << local_total_wirelength << endl;
         cout << "Local cost: " << cost << endl;
     }
     
     cout << "=== Best cost: " << best_cost << " ===" << endl;
+    
+    // Output best solution to file
+    for (const auto& tap_pair : best_trees) {
+        int tap_id = tap_pair.first;
+        const Tree& tree = tap_pair.second;
+        
+        // Get pins assigned to this tap
+        vector<int> pins = pins_per_tap[tap_id];
+        
+        out << "TAP " << tap_id << "\n";
+        out << "PINS " << pins.size() << "\n";
+        for (int pin_id : pins) {
+            out << "PIN " << pin_id << "\n";
+        }
+        
+        // Output edges
+        auto edges = tree.getTreeEdges();
+        out << "ROUTING " << edges.size() << "\n";
+        for (const auto& edge : edges) {
+            out << "EDGE " << edge.first.x << " " << edge.first.y << " " 
+                << edge.second.x << " " << edge.second.y << "\n";
+        }
+    }
+    
+    out.close();
     return 0;
 
 }
