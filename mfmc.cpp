@@ -45,12 +45,29 @@ map<int, int> MFMC::assignPinsToTaps(const Problem& prob) {
             continue; // already assigned
         }
 
-        // Check if tap has capacity
-        if (tap_load[tap_id] < prob.MAX_LOAD) {
-            assignment[pin_id] = tap_id;
-            tap_load[tap_id]++;
-        }
+        // For pins with same cost, look ahead and pick the tap with lowest load
+        int current_cost = assignmentEdges[i].cost;
+        int best_tap = -1;
+        int min_load = prob.MAX_LOAD + 1;
+        
 
+        //new approach: if same cost, pick the tap with lowest load
+        // Scan ahead while cost is the same
+        for (int j = i; j < assignmentEdges.size() && assignmentEdges[j].cost == current_cost; j++) {
+            if (assignmentEdges[j].pin == pin_id) {  // only consider edges for this pin
+                int candidate_tap = assignmentEdges[j].tap;
+                if (tap_load[candidate_tap] < min_load) {
+                    min_load = tap_load[candidate_tap];
+                    best_tap = candidate_tap;
+                }
+            }
+        }
+        
+        // Assign to best tap if it has capacity
+        if (best_tap != -1 && tap_load[best_tap] < prob.MAX_LOAD) {
+            assignment[pin_id] = best_tap;
+            tap_load[best_tap]++;
+        }
     }
     cout << "Assignment: " << endl;
     for (const auto& pair : assignment) {
