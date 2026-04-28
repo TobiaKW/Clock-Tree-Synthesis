@@ -38,6 +38,7 @@ private:
     Edge& getEdge(Point p1, Point p2);  // returns canonical edge REFERENCE
 
 public:
+    void updateUsage(Point p1, Point p2);
     bool canUse(Point p1, Point p2) const;    // check legal && usage < CAPACITY
     void gridInit(const Problem& prob);
 };
@@ -47,7 +48,8 @@ class Tree{
 private:
     set<Point> tree_points;
     set<pair<Point, Point>> tree_edges;
-    map<Point, int> delay; //for monitoring delay and skew
+    map<int, int> pin_delay;  // pin_id -> delay
+    
 public:
     void addPoint(Point p);
     void addEdge(pair<Point, Point> edge);
@@ -55,6 +57,14 @@ public:
     void removeEdge(pair<Point, Point> edge);
     set<Point> getTreePoints() const;
     set<pair<Point, Point>> getTreeEdges() const;
+    
+    void setDelay(int pin_id, int delay);
+    int getDelay(int pin_id) const;
+    int getSkew() const;
+    int getWirelength() const;
+    //skew functions
+    map<Point, int> getDelay() const;
+    void setDelay(Point p, int delay);
 };
 
 #endif

@@ -65,6 +65,10 @@ void Tree::addEdge(pair<Point, Point> edge) {
     tree_edges.insert(edge);
 }
 
+void Grid::updateUsage(Point p1, Point p2) {
+    getEdge(p1, p2).usage++;
+}
+
 void Tree::removePoint(Point p) {
     tree_points.erase(p);
 }  
@@ -73,10 +77,37 @@ void Tree::removeEdge(pair<Point, Point> edge) {
     tree_edges.erase(edge);
 }
 
-set<pair<Point, Point>> Tree::getTreeEdges() {
+set<pair<Point, Point>> Tree::getTreeEdges() const {
     return tree_edges;
 }
 
-set<Point> Tree::getTreePoints() {
+set<Point> Tree::getTreePoints() const {
     return tree_points;
+}
+
+void Tree::setDelay(int pin_id, int delay_val) {
+    pin_delay[pin_id] = delay_val;
+}
+
+int Tree::getDelay(int pin_id) const {
+    auto it = pin_delay.find(pin_id);
+    return it != pin_delay.end() ? it->second : -1;
+}
+
+int Tree::getSkew() const {
+    if (pin_delay.empty()) return 0;
+    
+    int max_delay = 0;
+    int min_delay = INT_MAX;
+    for (const auto& pair : pin_delay) {
+        int delay = pair.second;
+        max_delay = max(max_delay, delay);
+        min_delay = min(min_delay, delay);
+    }
+    
+    return (min_delay == INT_MAX) ? 0 : (max_delay - min_delay);
+}
+
+int Tree::getWirelength() const {
+    return tree_edges.size();
 }

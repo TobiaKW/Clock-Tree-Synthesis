@@ -34,9 +34,77 @@ int main(int argc, char* argv[]){
     map<int, int> assignment = mfmc.assignPinsToTaps(prob);
     //output: matching result
 
-    // route pins to taps
+    // route pins to taps (per-tap trees)
     AStar astar;
+    
+    // Group pins by tap
+    map<int, vector<int>> pins_per_tap; // [tap_id] -> [vector of pin_id]
+    for (const auto& pair : assignment) {
+        int pin_id = pair.first;
+        int tap_id = pair.second;
+        pins_per_tap[tap_id].push_back(pin_id);
+    }
+    
+    // Track global delays for final cost
+    int global_max_delay = 0;
+    int global_min_delay = INT_MAX;
+    int total_wirelength = 0;
+    
+    // Route each tap's pins to its own tree
+    for (const auto& tap_pair : pins_per_tap) {
+        int tap_id = tap_pair.first;
+        const vector<int>& pin_ids = tap_pair.second;
+        
+        Tree tree;
+        tree.addPoint({prob.taps[tap_id].x, prob.taps[tap_id].y});  // Initialize with tap
+        
+        for (int pin_id : pin_ids) {
+            vector<Point> path = astar.routePin(prob.pins[pin_id], tree, grid, prob);
+            if (path.empty()) {
+                cerr << "Error: could not route pin " << pin_id << " to tap " << tap_id << "\n";
+                return 1;
+            }
+            
+            // Add path to tree
+            for (int i = 0; i < path.size() - 1; i++) {
+                tree.addPoint(path[i]);
+                tree.addEdge({path[i], path[i+1]});
+                grid.updateUsage(path[i], path[i+1]);
+            }
+            tree.addPoint(path.back());
+            
+            // Track delay for this pin
+            int delay = path.size() - 1;
+            tree.setDelay(pin_id, delay);
+            
+            cout << "Pin " << pin_id << " routed to tap " << tap_id << " with delay " << delay << endl;
+        }
+        
+        // Report skew for this tap
+        int tap_skew = tree.getSkew();
+        cout << "Tap " << tap_id << " skew: " << tap_skew << endl;
+        
+        // Track global delays and wirelength
+        for (const auto& pair : pins_per_tap[tap_id]) {
+            int pin_delay = tree.getDelay(pair);
+            if (pin_delay != -1) {
+                global_max_delay = max(global_max_delay, pin_delay);
+                global_min_delay = min(global_min_delay, pin_delay);
+            }
+        }
+        total_wirelength += tree.getWirelength();
+        cout << endl;
+    }
+    
+    // Calculate final cost
+    if (global_min_delay == INT_MAX) global_min_delay = 0;
+    int global_skew = global_max_delay - global_min_delay;
+    int cost = global_skew * prob.numTaps + total_wirelength;
+    
+    cout << "=== Final Results ===" << endl;
+    cout << "Global skew: " << global_skew << endl;
+    cout << "Total wirelength: " << total_wirelength << endl;
+    cout << "Final cost: " << cost << endl;
 
-    //todo
     return 0;
 }
