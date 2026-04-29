@@ -8,10 +8,11 @@
 using namespace std;
 
 struct assignmentEdge {
-    int cost, dist_to_center, pin, tap;
+    int cost, pin, tap;
     bool operator<(const assignmentEdge& other) const {
         if (cost != other.cost) return cost < other.cost;
-        return dist_to_center < other.dist_to_center;  // closer to center first
+        if (pin != other.pin) return pin < other.pin;
+        return tap < other.tap;
     }
 };
 
@@ -19,7 +20,7 @@ struct assignmentEdge {
 class MFMC {
 public:
     map<int, int> assignPinsToTaps(const Problem& prob);
-
+    map<int, int> reassign(const map<int, int>& assignment, const Problem& prob);
 private:
     int manhattanDistance(const Pin& pin, const Tap& tap) const;
 
