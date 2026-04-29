@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <random>
+#include <chrono>
 #include "types.hpp"
 #include "parser.hpp"
 #include "grid.hpp"
@@ -10,6 +11,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]){
+    auto start_total = chrono::high_resolution_clock::now();
 
     // check arguments
     if (argc != 3) {
@@ -23,16 +25,23 @@ int main(int argc, char* argv[]){
         cerr << "Error: could not open output file " << outFile << "\n";
     }
 
+    auto start = chrono::high_resolution_clock::now();
     // parse problem
     Problem prob = ParseProblem(inFile);
 
     // initialize grid
     Grid grid;
     grid.gridInit(prob);
+    auto end = chrono::high_resolution_clock::now();
+    cerr << "[PROFILE] Parse + Grid init: " << chrono::duration<double>(end - start).count() << "s\n";
 
     // assign pins to taps
+    start = chrono::high_resolution_clock::now();
     MFMC mfmc;
     map<int, int> assignment = mfmc.assignPinsToTaps(prob);
+    end = chrono::high_resolution_clock::now();
+    cerr << "[PROFILE] MFMC assignment: " << chrono::duration<double>(end - start).count() << "s\n";
+
     //output: matching result
 
     // route pins to taps (per-tap trees)
@@ -58,7 +67,8 @@ int main(int argc, char* argv[]){
     default_random_engine engine{random_device()()};
 
     // Route each tap's pins to its own tree
-    for (int retry = 0; retry < 2; retry++) {
+    auto start_routing = chrono::high_resolution_clock::now();
+    for (int retry = 0; retry < 3; retry++) {
 
         int local_max_delay = 0;
         int local_min_delay = INT_MAX;
@@ -140,6 +150,8 @@ int main(int argc, char* argv[]){
         cout << "Local wirelength: " << local_total_wirelength << endl;
         cout << "Local cost: " << cost << endl;
     }
+    auto end_routing = chrono::high_resolution_clock::now();
+    cerr << "[PROFILE] A* routing (all retries): " << chrono::duration<double>(end_routing - start_routing).count() << "s\n";
     
     cout << "=== Best cost: " << best_cost << " ===" << endl;
     
@@ -167,6 +179,8 @@ int main(int argc, char* argv[]){
     }
     
     out.close();
+    auto end_total = chrono::high_resolution_clock::now();
+    cerr << "[PROFILE] TOTAL TIME: " << chrono::duration<double>(end_total - start_total).count() << "s\n";
     return 0;
 
 }

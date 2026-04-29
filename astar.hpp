@@ -18,13 +18,13 @@ public:
     // Returns empty vector if no path found
     vector<Point> routePin(const Pin& pin, const Tree& tree, 
                            const Grid& grid, const Problem& prob);
+    int cachedClosestTreeDistance(const Point& from, const Tree& tree) const;
 
 private:
     // Manhattan distance between two points
     int manhattan(const Point& from, const Point& to) const;
     
-    // Manhattan distance from point to nearest point in tree
-    int heuristic(const Point& from, const Tree& tree) const;
+    int heuristic(const Point& from, const set<Point>& tree_points, int& closest_distance) const;
     
     // Reconstruct path from parent map
     vector<Point> reconstructPath(const map<Point, Point>& parent, 

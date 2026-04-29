@@ -11,22 +11,19 @@ using namespace std;
 
 vector<Point> AStar::routePin(const Pin& pin, const Tree& tree,
                                const Grid& grid, const Problem& prob) {
-    // TODO: Implement A* search
-    // 1. Initialize open_set (priority queue), closed_set, g_cost, parent
-    // a queue of int-point pair compared with (greater<>) and stored the sorted queue in the vector<pair> called open_set
-    // int is the f-value, Point is the corresponding node
-    // pin --g--> node --h-->tree point, f=g+h
     priority_queue<pair<int, Point>, vector<pair<int, Point>>, greater<pair<int, Point>>> open_set;
     set<Point> closed_set;
-    map<Point, Point> parent;//first element is the node, second element is the parent
+    map<Point, Point> parent;
     map<Point, int> g_cost;
     set<Point> tree_points = tree.getTreePoints();
     set<pair<Point, Point>> tree_edges = tree.getTreeEdges();
+    
+    int closest_tree_dist = INT_MAX;  // Cache for heuristic
 
     // 2. Start from pin.location, goal = closest tree point
     Point start = {pin.x, pin.y};
-    int h_value = heuristic(start, tree);
-    int f_value = h_value;//init
+    closest_tree_dist = heuristic(start, tree_points, closest_tree_dist);
+    int f_value = closest_tree_dist;
     g_cost.insert({start, 0});
     open_set.push(make_pair(f_value, start));
 
@@ -55,7 +52,7 @@ vector<Point> AStar::routePin(const Pin& pin, const Tree& tree,
                     continue;
                 }
                 int g_new = g_cost.at(current) + 1;
-                int h_new = heuristic(neighbor, tree);
+                int h_new = heuristic(neighbor, tree_points, closest_tree_dist);
                 int f_new = g_new + h_new;
                 if (g_cost.find(neighbor) == g_cost.end() || g_new < g_cost[neighbor]) { //neighbor is new OR better than the previous one
                     g_cost[neighbor] = g_new;
@@ -74,8 +71,7 @@ int AStar::manhattan(const Point& from, const Point& to) const {
     return abs(from.x - to.x) + abs(from.y - to.y);
 }
 
-int AStar::heuristic(const Point& from, const Tree& tree) const {
-    set<Point> tree_points = tree.getTreePoints();
+int AStar::heuristic(const Point& from, const set<Point>& tree_points, int& closest_distance) const {
     int min_distance = INT_MAX;
     for (const Point& tree_point : tree_points) {
         int distance = manhattan(from, tree_point);
@@ -83,7 +79,11 @@ int AStar::heuristic(const Point& from, const Tree& tree) const {
             min_distance = distance;
         }
     }
-    return min_distance;
+    // Update cache if we found something closer
+    if (min_distance < closest_distance) {
+        closest_distance = min_distance;
+    }
+    return closest_distance;
 }
 
 vector<Point> AStar::reconstructPath(const map<Point, Point>& parent,
