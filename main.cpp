@@ -68,7 +68,7 @@ int main(int argc, char* argv[]){
 
     // Route each tap's pins to its own tree
     auto start_routing = chrono::high_resolution_clock::now();
-    for (int retry = 0; retry < 3; retry++) {
+    for (int retry = 0; retry < 2; retry++) {
 
         int local_max_delay = 0;
         int local_min_delay = INT_MAX;

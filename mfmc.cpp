@@ -70,8 +70,6 @@ map<int, int> MFMC::assignPinsToTaps(const Problem& prob) {
         }
     }
     
-    // Post-process: optimize outlier assignments
-    //assignment = postProcessOpt(assignment, prob);
     
     cout << "Assignment: " << endl;
     for (const auto& pair : assignment) {

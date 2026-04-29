@@ -16,3 +16,6 @@ Proposal/
 
 eval.py
 *.in
+
+present_ss/
+*.jpg
