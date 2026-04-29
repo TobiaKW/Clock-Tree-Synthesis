@@ -69,6 +69,10 @@ map<int, int> MFMC::assignPinsToTaps(const Problem& prob) {
             tap_load[best_tap]++;
         }
     }
+    
+    // Post-process: optimize outlier assignments
+    //assignment = postProcessOpt(assignment, prob);
+    
     cout << "Assignment: " << endl;
     for (const auto& pair : assignment) {
         cout << "Pin " << pair.first << " assigned to tap " << pair.second << endl;
@@ -79,3 +83,4 @@ map<int, int> MFMC::assignPinsToTaps(const Problem& prob) {
 int MFMC::manhattanDistance(const Pin& pin, const Tap& tap) const {
     return abs(pin.x - tap.x) + abs(pin.y - tap.y);
 }
+

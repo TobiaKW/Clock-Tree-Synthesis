@@ -19,10 +19,12 @@ struct assignmentEdge {
 class MFMC {
 public:
     map<int, int> assignPinsToTaps(const Problem& prob);
+    map<int, int> postProcessOpt(const map<int, int>& assignment, const Problem& prob);
 
 private:
     int manhattanDistance(const Pin& pin, const Tap& tap) const;
-    
+    int totalManhattanDistance(const map<int, int>& assignment, const Problem& prob);
+
 };
 
 #endif
