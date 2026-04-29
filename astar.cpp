@@ -23,7 +23,7 @@ vector<Point> AStar::routePin(const Pin& pin, const Tree& tree,
     // 2. Start from pin.location, goal = closest tree point
     Point start = {pin.x, pin.y};
     closest_tree_dist = heuristic(start, tree_points, closest_tree_dist);
-    int f_value = closest_tree_dist;
+    int f_value = closest_tree_dist; //initial g = 0,so f=h
     g_cost.insert({start, 0});
     open_set.push(make_pair(f_value, start));
 
