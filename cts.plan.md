@@ -152,7 +152,10 @@ For each tap and its pin set:
 - [ ] **Testing:** Tiny synthetic cases (3×3 grid, 1-2 taps, 2-4 pins)
 - [ ] **Conflict resolution:** Pin reordering + cross-tap reassignment
 
-## TODO(updated 28 Apr):
+## TODO(updated 29 Apr):
 
-MFMC: post-process optimization
-Astar: in-function backtrack
+MFMC reassignment:
+
+1. soft discount to splitting cluster instead of strictly prioritized
+2. onfirm the max delay tap tree have a significant difference to the avg max delay, before giving priority
+
