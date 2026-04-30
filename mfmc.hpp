@@ -20,10 +20,11 @@ struct assignmentEdge {
 class MFMC {
 public:
     map<int, int> assignPinsToTaps(const Problem& prob, const vector<double>& cost_discount);
-    map<int, int> reassign(const map<int, int>& assignment, const Problem& prob);
 
 private:
     map<int, int> assignPinsGreedy(const Problem& prob, const vector<double>& cost_discount) const;
+    map<int, int> reassign(const map<int, int>& assignment, const Problem& prob);
+    map<int, int> worstPinSwap(const map<int, int>& assignment, const Problem& prob) const;
     int detectSplitTapCluster(const map<int, int>& assignment, const Problem& prob) const;
     int manhattanDistance(const Pin& pin, const Tap& tap) const;
 };
