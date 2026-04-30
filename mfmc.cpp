@@ -88,9 +88,13 @@ map<int, int> MFMC::assignPinsGreedy(const Problem& prob, const vector<double>& 
 map<int, int> MFMC::assignPinsToTaps(const Problem& prob, const vector<double>& cost_discount) {
     map<int, int> assignment = assignPinsGreedy(prob, cost_discount);
     assignment = reassign(assignment, prob);
-    for (int iter = 0; iter < 3; iter++) {
+    for (int iter = 0; iter < 8; iter++) {
         cout << "Iteration " << iter << endl;
-        assignment = worstPinSwap(assignment, prob);
+        map<int, int> new_assignment = worstPinSwap(assignment, prob);
+        if (new_assignment == assignment) {
+            break;
+        }
+        assignment = new_assignment;
     }
     return assignment;
 }
