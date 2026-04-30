@@ -9,6 +9,7 @@
 #include "mfmc.hpp"
 #include "astar.hpp"
 
+
 using namespace std;
 
 int main(int argc, char* argv[]){
@@ -71,18 +72,64 @@ int main(int argc, char* argv[]){
     // Route each tap's pins to its own tree
     auto start_routing = chrono::high_resolution_clock::now();
     for (int retry = 0; retry < 3; retry++) {
+        auto pinTapDist = [&](int pinId, int tapId) {
+            return abs(prob.pins[pinId].x - prob.taps[tapId].x) +
+                   abs(prob.pins[pinId].y - prob.taps[tapId].y);
+        };
         Grid local_grid = grid;
         bool skip_retry = false;
         map<int, Tree> local_trees;  // Trees for this retry
 
-        //level 1 backtrack: shuffle pin order
-        for (auto &tap_pair : pins_per_tap) {
-            shuffle(tap_pair.second.begin(), tap_pair.second.end(), engine);
+        if (retry == 0) {//far-first pin order
+            for (auto &tap_pair : pins_per_tap) {
+                sort(tap_pair.second.begin(), tap_pair.second.end(), [&](int a, int b) {
+                    return pinTapDist(a, tap_pair.first) > pinTapDist(b, tap_pair.first);
+                });
+            }
+        }
+        else if (retry == 1) {//near-first pin order
+            for (auto &tap_pair : pins_per_tap) {
+                sort(tap_pair.second.begin(), tap_pair.second.end(), [&](int a, int b) {
+                    return pinTapDist(a, tap_pair.first) < pinTapDist(b, tap_pair.first);
+                });
+            }
+        }
+        else if (retry >= 2) {//random shuffle pin order
+            for (auto &tap_pair : pins_per_tap) {
+                shuffle(tap_pair.second.begin(), tap_pair.second.end(), engine);
+            }
         }
         
-        for (const auto& tap_pair : pins_per_tap) {
-            int tap_id = tap_pair.first;
-            const vector<int>& pin_ids = tap_pair.second;
+
+        vector<int> tap_load(prob.numTaps, 0);
+        for (const auto& pair : assignment) {
+            int tap_id = pair.second;
+            tap_load[tap_id]++;
+        }
+        vector<int> tap_order;
+        for (int i = 0; i < prob.numTaps; i++) {
+            tap_order.push_back(i);
+        }
+        if (retry == 0) {//descending tap load order
+            sort(tap_order.begin(), tap_order.end(), [&](int a, int b) {
+                return tap_load[a] > tap_load[b];
+            });
+        }
+        else if (retry == 1) {//ascending tap load order
+            sort(tap_order.begin(), tap_order.end(), [&](int a, int b) {
+                return tap_load[a] < tap_load[b];
+            });
+        }
+        else if (retry >= 2) {//random shuffle tap order
+            shuffle(tap_order.begin(), tap_order.end(), engine);
+        }
+
+        for (int tap_id : tap_order) {
+            auto itPinList = pins_per_tap.find(tap_id);
+            if (itPinList == pins_per_tap.end()) {
+                continue;
+            }
+            const vector<int>& pin_ids = itPinList->second;
             
             Tree tree;
             tree.addPoint({prob.taps[tap_id].x, prob.taps[tap_id].y});  // Initialize with tap
@@ -161,7 +208,9 @@ int main(int argc, char* argv[]){
             q.push({tx, ty});
 
             while (!q.empty()) {
-                auto [x, y] = q.front();
+                pair<int, int> front = q.front();
+                int x = front.first;
+                int y = front.second;
                 q.pop();
                 int cur = arrival[x][y];
 
@@ -184,17 +233,18 @@ int main(int argc, char* argv[]){
             }
 
             auto itPins = pins_per_tap.find(t);
-            if (itPins != pins_per_tap.end()) {
-                for (int pin_id : itPins->second) {
-                    int px = prob.pins[pin_id].x;
-                    int py = prob.pins[pin_id].y;
-                    if (arrival[px][py] >= INF) {
-                        skip_retry = true;
-                        break;
-                    }
-                    local_max_delay = max(local_max_delay, arrival[px][py]);
-                    local_min_delay = min(local_min_delay, arrival[px][py]);
+            if (itPins == pins_per_tap.end()) {
+                continue;
+            }
+            for (int pin_id : itPins->second) {
+                int px = prob.pins[pin_id].x;
+                int py = prob.pins[pin_id].y;
+                if (arrival[px][py] >= INF) {
+                    skip_retry = true;
+                    break;
                 }
+                local_max_delay = max(local_max_delay, arrival[px][py]);
+                local_min_delay = min(local_min_delay, arrival[px][py]);
             }
             if (skip_retry) break;
         }
