@@ -37,8 +37,9 @@ int main(int argc, char* argv[]){
 
     // assign pins to taps
     start = chrono::high_resolution_clock::now();
+    vector<double> cost_discount(prob.numTaps, 1.0);
     MFMC mfmc;
-    map<int, int> assignment = mfmc.assignPinsToTaps(prob);
+    map<int, int> assignment = mfmc.assignPinsToTaps(prob, cost_discount);
     end = chrono::high_resolution_clock::now();
     cerr << "[PROFILE] MFMC assignment: " << chrono::duration<double>(end - start).count() << "s\n";
 
@@ -68,7 +69,7 @@ int main(int argc, char* argv[]){
 
     // Route each tap's pins to its own tree
     auto start_routing = chrono::high_resolution_clock::now();
-    for (int retry = 0; retry < 2; retry++) {
+    for (int retry = 0; retry < 3; retry++) {
 
         int local_max_delay = 0;
         int local_min_delay = INT_MAX;
