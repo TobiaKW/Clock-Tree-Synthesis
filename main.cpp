@@ -2,6 +2,7 @@
 #include <fstream>
 #include <random>
 #include <chrono>
+#include <queue>
 #include "types.hpp"
 #include "parser.hpp"
 #include "grid.hpp"
@@ -70,10 +71,6 @@ int main(int argc, char* argv[]){
     // Route each tap's pins to its own tree
     auto start_routing = chrono::high_resolution_clock::now();
     for (int retry = 0; retry < 3; retry++) {
-
-        int local_max_delay = 0;
-        int local_min_delay = INT_MAX;
-        int local_total_wirelength = 0;
         Grid local_grid = grid;
         bool skip_retry = false;
         map<int, Tree> local_trees;  // Trees for this retry
@@ -106,35 +103,104 @@ int main(int argc, char* argv[]){
                 }
                 tree.addPoint(path.back());
                 
-                // Track delay for this pin
+                // Keep compatibility with existing tree bookkeeping.
                 int delay = path.size() - 1;
                 tree.setDelay(pin_id, delay);
-                
-                // cout << "Pin " << pin_id << " routed to tap " << tap_id << " with delay " << delay << endl;
             }
-            
-            // Report skew for this tap
-            int tap_skew = tree.getSkew();
-            // cout << "Tap " << tap_id << " skew: " << tap_skew << endl;
-            
-            // Track global delays and wirelength
-            for (int pin_id : pins_per_tap[tap_id]) {
-                int pin_delay = tree.getDelay(pin_id);
-                if (pin_delay != -1) {
-                    local_max_delay = max(local_max_delay, pin_delay);
-                    local_min_delay = min(local_min_delay, pin_delay);
-                }
-            }
-            local_total_wirelength += tree.getWirelength();
-            // cout << endl;
-            
+
             local_trees[tap_id] = tree;  // Save tree for this tap
         }
         
         if (skip_retry) continue;
-        
-        // Calculate final cost using GLOBAL skew (max/min across all pins)
-        if (local_min_delay == INT_MAX) local_min_delay = 0;
+
+        // Eval.py-equivalent cost calculation:
+        // 1) length = unique unit edges per tap (sum over taps),
+        // 2) delay = BFS arrival from each tap over used edges.
+        const int INF = 1e9;
+        int local_max_delay = 0;
+        int local_min_delay = INF;
+        int local_total_wirelength = 0;
+
+        for (int t = 0; t < prob.numTaps; ++t) {
+            vector<vector<vector<int>>> used(
+                2, vector<vector<int>>(prob.GRID_SIZE, vector<int>(prob.GRID_SIZE, 0)));
+
+            auto itTree = local_trees.find(t);
+            if (itTree != local_trees.end()) {
+                const auto edges = itTree->second.getTreeEdges();
+                for (const auto& edge : edges) {
+                    int x1 = edge.first.x, y1 = edge.first.y;
+                    int x2 = edge.second.x, y2 = edge.second.y;
+
+                    if (x1 == x2) {
+                        int x = x1;
+                        int l = min(y1, y2), h = max(y1, y2);
+                        for (int y = l; y < h; ++y) {
+                            if (used[1][x][y] == 0) {
+                                used[1][x][y] = 1;
+                                local_total_wirelength++;
+                            }
+                        }
+                    } else if (y1 == y2) {
+                        int y = y1;
+                        int l = min(x1, x2), h = max(x1, x2);
+                        for (int x = l; x < h; ++x) {
+                            if (used[0][x][y] == 0) {
+                                used[0][x][y] = 1;
+                                local_total_wirelength++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            vector<vector<int>> arrival(prob.GRID_SIZE, vector<int>(prob.GRID_SIZE, INF));
+            queue<pair<int, int>> q;
+            int tx = prob.taps[t].x, ty = prob.taps[t].y;
+            arrival[tx][ty] = 0;
+            q.push({tx, ty});
+
+            while (!q.empty()) {
+                auto [x, y] = q.front();
+                q.pop();
+                int cur = arrival[x][y];
+
+                if (x > 0 && used[0][x - 1][y] && cur + 1 < arrival[x - 1][y]) {
+                    arrival[x - 1][y] = cur + 1;
+                    q.push({x - 1, y});
+                }
+                if (x < prob.GRID_SIZE - 1 && used[0][x][y] && cur + 1 < arrival[x + 1][y]) {
+                    arrival[x + 1][y] = cur + 1;
+                    q.push({x + 1, y});
+                }
+                if (y > 0 && used[1][x][y - 1] && cur + 1 < arrival[x][y - 1]) {
+                    arrival[x][y - 1] = cur + 1;
+                    q.push({x, y - 1});
+                }
+                if (y < prob.GRID_SIZE - 1 && used[1][x][y] && cur + 1 < arrival[x][y + 1]) {
+                    arrival[x][y + 1] = cur + 1;
+                    q.push({x, y + 1});
+                }
+            }
+
+            auto itPins = pins_per_tap.find(t);
+            if (itPins != pins_per_tap.end()) {
+                for (int pin_id : itPins->second) {
+                    int px = prob.pins[pin_id].x;
+                    int py = prob.pins[pin_id].y;
+                    if (arrival[px][py] >= INF) {
+                        skip_retry = true;
+                        break;
+                    }
+                    local_max_delay = max(local_max_delay, arrival[px][py]);
+                    local_min_delay = min(local_min_delay, arrival[px][py]);
+                }
+            }
+            if (skip_retry) break;
+        }
+        if (skip_retry) continue;
+
+        if (local_min_delay == INF) local_min_delay = 0;
         int global_skew = local_max_delay - local_min_delay;
         int cost = global_skew * prob.numTaps + local_total_wirelength;
         if (cost < best_cost) {
