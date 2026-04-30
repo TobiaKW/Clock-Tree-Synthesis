@@ -1,4 +1,5 @@
 #include "grid.hpp"
+#include <climits>
 
 using namespace std;
 

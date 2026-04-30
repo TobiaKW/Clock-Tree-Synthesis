@@ -1,8 +1,10 @@
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include <random>
 #include <chrono>
 #include <queue>
+#include <climits>
 #include "types.hpp"
 #include "parser.hpp"
 #include "grid.hpp"
