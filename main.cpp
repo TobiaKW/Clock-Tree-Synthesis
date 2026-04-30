@@ -71,7 +71,7 @@ int main(int argc, char* argv[]){
 
     // Route each tap's pins to its own tree
     auto start_routing = chrono::high_resolution_clock::now();
-    for (int retry = 0; retry < 3; retry++) {
+    for (int retry = 0; retry < 5; retry++) {
         auto pinTapDist = [&](int pinId, int tapId) {
             return abs(prob.pins[pinId].x - prob.taps[tapId].x) +
                    abs(prob.pins[pinId].y - prob.taps[tapId].y);
@@ -80,21 +80,15 @@ int main(int argc, char* argv[]){
         bool skip_retry = false;
         map<int, Tree> local_trees;  // Trees for this retry
 
-        if (retry == 0) {//far-first pin order
-            for (auto &tap_pair : pins_per_tap) {
-                sort(tap_pair.second.begin(), tap_pair.second.end(), [&](int a, int b) {
-                    return pinTapDist(a, tap_pair.first) > pinTapDist(b, tap_pair.first);
-                });
-            }
-        }
-        else if (retry == 1) {//near-first pin order
+
+        if (retry == 0) {//near-first pin order
             for (auto &tap_pair : pins_per_tap) {
                 sort(tap_pair.second.begin(), tap_pair.second.end(), [&](int a, int b) {
                     return pinTapDist(a, tap_pair.first) < pinTapDist(b, tap_pair.first);
                 });
             }
         }
-        else if (retry >= 2) {//random shuffle pin order
+        else {//random shuffle pin order
             for (auto &tap_pair : pins_per_tap) {
                 shuffle(tap_pair.second.begin(), tap_pair.second.end(), engine);
             }
@@ -115,12 +109,7 @@ int main(int argc, char* argv[]){
                 return tap_load[a] > tap_load[b];
             });
         }
-        else if (retry == 1) {//ascending tap load order
-            sort(tap_order.begin(), tap_order.end(), [&](int a, int b) {
-                return tap_load[a] < tap_load[b];
-            });
-        }
-        else if (retry >= 2) {//random shuffle tap order
+        else {//random shuffle tap order
             shuffle(tap_order.begin(), tap_order.end(), engine);
         }
 

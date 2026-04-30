@@ -96,6 +96,7 @@ map<int, int> MFMC::assignPinsToTaps(const Problem& prob, const vector<double>& 
         }
         assignment = new_assignment;
     }
+    
     return assignment;
 }
 
@@ -132,30 +133,93 @@ map<int, int> MFMC::worstPinSwap(const map<int, int>& assignment, const Problem&
         int gain;
     };
     vector<SwapCandidate> swap_candidates;
-    swap_candidates.reserve(current_assignment.size());
+    swap_candidates.reserve(current_assignment.size() * 3);
 
-    for (const auto& pair : current_assignment) {
-        int pin_id = pair.first;
-        int tap_id = pair.second;
+
+    // Current per-tap pin counts and max assigned distance.
+    vector<int> tap_load(prob.numTaps, 0);
+    vector<int> tap_max_dist(prob.numTaps, 0);
+    for (const auto& kv : current_assignment) {
+        int pin_id = kv.first;
+        int tap_id = kv.second;
+        if (tap_id < 0 || tap_id >= prob.numTaps || pin_id < 0 || pin_id >= prob.numPins) continue;
+        tap_load[tap_id]++;
+        int dist = manhattanDistance(prob.pins[pin_id], prob.taps[tap_id]);
+        tap_max_dist[tap_id] = max(tap_max_dist[tap_id], dist);
+    }
+
+    // Rank taps by max distance and gate by significant outlier rule.
+    vector<pair<int, int>> tapMaxDistance; //<tap_id, max_distance>
+    tapMaxDistance.reserve(prob.numTaps);
+    double sum = 0.0;
+    int active_taps = 0;
+    for (int t = 0; t < prob.numTaps; ++t) {
+        if (tap_load[t] == 0) continue;
+        tapMaxDistance.push_back(make_pair(t, tap_max_dist[t]));
+        sum += tap_max_dist[t];
+        active_taps++;
+    }
+    if (active_taps == 0) return current_assignment;
+
+    double mu = sum / active_taps;
+    double sq_sum = 0.0;
+    for (int i = 0; i < (int)tapMaxDistance.size(); ++i) {
+        double diff = tapMaxDistance[i].second - mu;
+        sq_sum += diff * diff;
+    }
+    double sigma = sqrt(sq_sum / active_taps);
+    const double kSigma = 0.5;
+    const double minDelta = max(3.0, prob.GRID_SIZE / 40.0);
+
+    sort(tapMaxDistance.begin(), tapMaxDistance.end(), [](const pair<int, int>& a, const pair<int, int>& b) {
+        return a.second > b.second;
+    });//decreasing order
+
+    vector<char> isTopTap(prob.numTaps, 0);
+    int topK = min(3, (int)tapMaxDistance.size());
+    int selected = 0;
+    for (int i = 0; i < (int)tapMaxDistance.size() && selected < topK; ++i) {
+        int tap_id = tapMaxDistance[i].first;
+        int d = tapMaxDistance[i].second;
+        if (d >= mu + kSigma * sigma && (d - mu) >= minDelta) {//gate to ensure top 3 taps are outliers
+            isTopTap[tap_id] = 1;
+            selected++;
+        }
+    }
+    // Fallback if no tap passes the gate.
+    if (selected == 0) {
+        for (int i = 0; i < topK; ++i) {
+            isTopTap[tapMaxDistance[i].first] = 1;
+        }
+    }
+
+    for (const auto& kv : current_assignment ) {
+        int pin_id = kv.first;
+        int tap_id = kv.second;
+        if (!isTopTap[tap_id]) continue;
         if (tap_id < 0 || tap_id >= prob.numTaps || pin_id < 0 || pin_id >= prob.numPins) continue;
 
         int d_assign = manhattanDistance(prob.pins[pin_id], prob.taps[tap_id]);
-        int d_bestAlt = INT_MAX;
-        int bestAlt = -1;
+        vector<pair<int, int>> betterAlt; //<to_tap, distance>
 
         for (int t = 0; t < prob.numTaps; t++) {
             if (t == tap_id) continue;
             int d = manhattanDistance(prob.pins[pin_id], prob.taps[t]);
-            if (d < d_bestAlt) {
-                d_bestAlt = d;
-                bestAlt = t;
+            if (d < d_assign) {
+                betterAlt.push_back({t, d});
             }
         }
 
-        int gain = d_assign - d_bestAlt;
-        if (bestAlt != -1 && gain > 0) {//tunable
-            //cout << "swap candidate: " << pin_id << " from " << tap_id << " to " << bestAlt << " with gain " << gain << endl;
-            swap_candidates.push_back({pin_id, tap_id, bestAlt, gain});
+        sort(betterAlt.begin(), betterAlt.end(), [](const pair<int, int>& a, const pair<int, int>& b) {
+            return a.second < b.second;
+        });//sort by distance increasing
+
+        for (int i = 0; i < min(3, (int)betterAlt.size()); i++) {
+            int to_tap = betterAlt[i].first;
+            int gain = d_assign - betterAlt[i].second;
+            if (gain > 0) {
+                swap_candidates.push_back({pin_id, tap_id, to_tap, gain});
+            }
         }
     }
 
@@ -164,50 +228,6 @@ map<int, int> MFMC::worstPinSwap(const map<int, int>& assignment, const Problem&
              if (a.gain != b.gain) return a.gain > b.gain;
              return a.pin_id < b.pin_id;
          });
-
-    // Current per-tap pin counts (for MAX_LOAD checks/updates).
-    vector<int> tap_load(prob.numTaps, 0);
-    for (const auto& pair : current_assignment) {
-        int t = pair.second;
-        if (t >= 0 && t < prob.numTaps) tap_load[t]++;
-    }
-    // vector<bool> swapped(swap_candidates.size(), false); // retrieve if more than 1 swap method are used (for tracking)
-    
-    /* NOTE: abondoned due to not likely to happen in practice
-    // one way move if have spare load
-    for (int i = 0; i < min(10, (int)swap_candidates.size()); i++) {
-        // if (swapped[i]) continue;
-        int from_tap = swap_candidates[i].from_tap;
-        int to_tap = swap_candidates[i].to_tap;
-        if (from_tap < 0 || from_tap >= prob.numTaps || to_tap < 0 || to_tap >= prob.numTaps) continue;
-
-        // Move only if destination has spare load.
-        if (tap_load[to_tap] < prob.MAX_LOAD) {
-            current_assignment[swap_candidates[i].pin_id] = to_tap;
-            tap_load[from_tap]--;
-            tap_load[to_tap]++;
-            // swapped[i] = true;
-            cout << "1way swap: " << swap_candidates[i].pin_id << " from " << swap_candidates[i].from_tap << " to " << swap_candidates[i].to_tap << endl;
-        }
-    }
-
-    // 1for1 swap
-    for (int i = 0; i < min(200, (int)swap_candidates.size()); i++) {
-        for (int j = i + 1; j < min(200, (int)swap_candidates.size()); j++) {
-            if (swapped[i] || swapped[j]) continue;
-            // True 1-for-1 swap across the same pair of taps.
-            if (swap_candidates[i].from_tap == swap_candidates[j].to_tap &&
-                swap_candidates[i].to_tap == swap_candidates[j].from_tap) {
-                current_assignment[swap_candidates[i].pin_id] = swap_candidates[i].to_tap;
-                current_assignment[swap_candidates[j].pin_id] = swap_candidates[j].to_tap;
-                // tap_load unchanged for 1-for-1
-                swapped[i] = true;
-                swapped[j] = true;
-                cout << "1for1 swap: " << swap_candidates[i].pin_id << " from " << swap_candidates[i].from_tap << " to " << swap_candidates[i].to_tap << " and " << swap_candidates[j].pin_id << " from " << swap_candidates[j].from_tap << " to " << swap_candidates[j].to_tap << endl;
-            }
-        }
-    }
-    */
 
     // best partner 2-swap:
     // for candidate p: from_tap -> to_tap, find q currently in to_tap that maximizes
@@ -243,7 +263,6 @@ map<int, int> MFMC::worstPinSwap(const map<int, int>& assignment, const Problem&
         if (best_partner_pin != -1 && best_gain > 0) {
             current_assignment[p] = to_tap;
             current_assignment[best_partner_pin] = from_tap;
-            //swapped[i] = true;
             cout << "best-partner swap: " << p << " (" << from_tap << "->" << to_tap
                  << "), partner " << best_partner_pin << " (" << to_tap << "->" << from_tap
                  << "), gain " << best_gain << endl;
