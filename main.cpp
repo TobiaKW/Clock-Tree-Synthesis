@@ -73,9 +73,24 @@ int main(int argc, char* argv[]){
 
     // Route each tap's pins to its own tree
     auto start_routing = chrono::high_resolution_clock::now();
-    int flag = 0;
-    int max_retry = 4;//tunable
+    int max_retry = 20; // upper cap, real stop controlled by routing time budget
+    const double routing_time_limit_s = 15.0;
+    const double routing_safety_margin_s = 0.3;
+    double est_retry_time_s = -1.0; // updated after each completed retry
     for (int retry = 0; retry < max_retry; retry++) {
+        double elapsed_routing_s = chrono::duration<double>(
+            chrono::high_resolution_clock::now() - start_routing).count();
+        if (elapsed_routing_s + routing_safety_margin_s >= routing_time_limit_s) {
+            cerr << "[PROFILE] Stop retries: routing budget reached before retry " << retry << "\n";
+            break;
+        }
+        if (est_retry_time_s > 0.0 &&
+            elapsed_routing_s + est_retry_time_s + routing_safety_margin_s >= routing_time_limit_s) {
+            cerr << "[PROFILE] Stop retries: predicted next retry exceeds routing budget at retry " << retry << "\n";
+            break;
+        }
+
+        auto retry_start = chrono::high_resolution_clock::now();
         auto pinTapDist = [&](int pinId, int tapId) {
             return abs(prob.pins[pinId].x - prob.taps[tapId].x) +
                    abs(prob.pins[pinId].y - prob.taps[tapId].y);
@@ -259,21 +274,10 @@ int main(int argc, char* argv[]){
         cout << "Global skew: " << global_skew << endl;
         cout << "Local wirelength: " << local_total_wirelength << endl;
         cout << "Local cost: " << cost << endl;
-
-        while (!flag){
-            auto first_success = chrono::high_resolution_clock::now();
-            auto est_routing_time = chrono::duration<double>(first_success - start_routing).count();
-            flag = 1;
-            if (est_routing_time > 10.0) {
-                max_retry = 1;
-            }
-            else if (est_routing_time > 7.5) {
-                max_retry = 2;
-            }
-            else if (est_routing_time > 5.0) {
-                max_retry = 3;
-            }
-        }
+        double retry_time_s = chrono::duration<double>(
+            chrono::high_resolution_clock::now() - retry_start).count();
+        if (est_retry_time_s < 0.0) est_retry_time_s = retry_time_s;
+        else est_retry_time_s = 0.7 * est_retry_time_s + 0.3 * retry_time_s;
     }
     auto end_routing = chrono::high_resolution_clock::now();
     cerr << "[PROFILE] A* routing (all retries): " << chrono::duration<double>(end_routing - start_routing).count() << "s\n";
