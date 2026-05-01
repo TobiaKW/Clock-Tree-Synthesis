@@ -232,6 +232,7 @@ map<int, int> MFMC::worstPinSwap(const map<int, int>& assignment, const Problem&
     // best partner 2-swap:
     // for candidate p: from_tap -> to_tap, find q currently in to_tap that maximizes
     // gain = [d(p,from)+d(q,to)] - [d(p,to)+d(q,from)].
+    bool swapped_any = false;
     for (int i = 0; i < min(200, (int)swap_candidates.size()); i++) {
         //if (swapped[i]) continue;
 
@@ -263,10 +264,14 @@ map<int, int> MFMC::worstPinSwap(const map<int, int>& assignment, const Problem&
         if (best_partner_pin != -1 && best_gain > 0) {
             current_assignment[p] = to_tap;
             current_assignment[best_partner_pin] = from_tap;
+            swapped_any = true;
             cout << "best-partner swap: " << p << " (" << from_tap << "->" << to_tap
                  << "), partner " << best_partner_pin << " (" << to_tap << "->" << from_tap
                  << "), gain " << best_gain << endl;
         }
+    }
+    if (!swapped_any) {
+        cout << "No more swap in this iter." << endl;
     }
     // Keep this function behavior-preserving for now.
     return current_assignment;
