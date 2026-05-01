@@ -74,7 +74,7 @@ int main(int argc, char* argv[]){
     // Route each tap's pins to its own tree
     auto start_routing = chrono::high_resolution_clock::now();
     int max_retry = 20; // upper cap, real stop controlled by routing time budget
-    const double routing_time_limit_s = 15.0;
+    const double routing_time_limit_s = 12.0;
     const double routing_safety_margin_s = 0.3;
     double est_retry_time_s = -1.0; // updated after each completed retry
     for (int retry = 0; retry < max_retry; retry++) {
