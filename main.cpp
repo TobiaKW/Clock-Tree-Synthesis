@@ -73,7 +73,9 @@ int main(int argc, char* argv[]){
 
     // Route each tap's pins to its own tree
     auto start_routing = chrono::high_resolution_clock::now();
-    for (int retry = 0; retry < 5; retry++) {
+    int flag = 0;
+    int max_retry = 4;//tunable
+    for (int retry = 0; retry < max_retry; retry++) {
         auto pinTapDist = [&](int pinId, int tapId) {
             return abs(prob.pins[pinId].x - prob.taps[tapId].x) +
                    abs(prob.pins[pinId].y - prob.taps[tapId].y);
@@ -257,6 +259,18 @@ int main(int argc, char* argv[]){
         cout << "Global skew: " << global_skew << endl;
         cout << "Local wirelength: " << local_total_wirelength << endl;
         cout << "Local cost: " << cost << endl;
+
+        while (!flag){
+            auto first_success = chrono::high_resolution_clock::now();
+            auto est_routing_time = chrono::duration<double>(first_success - start_routing).count();
+            flag = 1;
+            if (est_routing_time > 10.0) {
+                max_retry = 1;
+            }
+            else if (est_routing_time > 5.0) {
+                max_retry = 3;
+            }
+        }
     }
     auto end_routing = chrono::high_resolution_clock::now();
     cerr << "[PROFILE] A* routing (all retries): " << chrono::duration<double>(end_routing - start_routing).count() << "s\n";
