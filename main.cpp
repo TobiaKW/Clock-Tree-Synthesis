@@ -77,14 +77,16 @@ int main(int argc, char* argv[]){
     const double routing_time_limit_s = 12.0;
     const double routing_safety_margin_s = 0.3;
     double est_retry_time_s = -1.0; // updated after each completed retry
+    int successful_retries = 0;
     for (int retry = 0; retry < max_retry; retry++) {
         double elapsed_routing_s = chrono::duration<double>(
             chrono::high_resolution_clock::now() - start_routing).count();
-        if (elapsed_routing_s + routing_safety_margin_s >= routing_time_limit_s) {
+        if (successful_retries > 0 &&
+            elapsed_routing_s + routing_safety_margin_s >= routing_time_limit_s) {
             cerr << "[PROFILE] Stop retries: routing budget reached before retry " << retry << "\n";
             break;
         }
-        if (est_retry_time_s > 0.0 &&
+        if (successful_retries > 0 && est_retry_time_s > 0.0 &&
             elapsed_routing_s + est_retry_time_s + routing_safety_margin_s >= routing_time_limit_s) {
             cerr << "[PROFILE] Stop retries: predicted next retry exceeds routing budget at retry " << retry << "\n";
             break;
@@ -274,6 +276,7 @@ int main(int argc, char* argv[]){
         cout << "Global skew: " << global_skew << endl;
         cout << "Local wirelength: " << local_total_wirelength << endl;
         cout << "Local cost: " << cost << endl;
+        successful_retries++;
         double retry_time_s = chrono::duration<double>(
             chrono::high_resolution_clock::now() - retry_start).count();
         if (est_retry_time_s < 0.0) est_retry_time_s = retry_time_s;
