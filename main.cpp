@@ -267,6 +267,9 @@ int main(int argc, char* argv[]){
             if (est_routing_time > 10.0) {
                 max_retry = 1;
             }
+            else if (est_routing_time > 7.5) {
+                max_retry = 2;
+            }
             else if (est_routing_time > 5.0) {
                 max_retry = 3;
             }
