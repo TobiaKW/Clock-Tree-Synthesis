@@ -57,7 +57,6 @@ python3 eval.py --input testname.in --output testname.out --plot true
 | `parser.cpp` / `parser.hpp` | Input I/O |
 | `types.hpp` | Shared structs |
 | `eval.py` | Official-style grading / plots |
-| `Report/` | LaTeX project report |
 
 ## License
 
