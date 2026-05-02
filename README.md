@@ -21,7 +21,7 @@ A C++17 implementation of a grid-based Clock Tree Synthesis tool for **CENG4120,
 - **Best solution kept** across retries using cost aligned with **`eval.py`** (unique unit-edge wirelength + skew from BFS delays).
 - **Adaptive time budget**: Routing retries stop before a configurable wall-clock limit (with at least one successful routing completed first), plus a hard **max_retry** cap.
 
-## Builds
+## Build
 
 ```bash
 g++ -std=c++17 -O2 -Wall -Wextra main.cpp parser.cpp grid.cpp mfmc.cpp astar.cpp -o cts
@@ -57,6 +57,12 @@ python3 eval.py --input testname.in --output testname.out --plot true
 | `parser.cpp` / `parser.hpp` | Input I/O |
 | `types.hpp` | Shared structs |
 | `eval.py` | Official-style grading / plots |
+
+## Disclaimer
+
+- This repository is **course work** for CENG4120. It is provided **as-is**, without warranty of any kind.
+- Behaviour and scores can depend on **inputs**, **random seeds**, and **tuning** (e.g. retry limits, time budget, assignment gates). Rebuild on the **same platform** the grader uses (typically Linux) before submission.
+- The authors are **not responsible** for any loss or incorrect results from use outside the intended course context.
 
 ## License
 
